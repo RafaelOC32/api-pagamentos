@@ -1,17 +1,25 @@
-import requests
+import json
+import os
+from datetime import datetime, timezone
 
-API_URL = "http://dependency-track:8080/api/v1/bom"
+def main():
+    projeto = os.getenv("DT_PROJECT_NAME", "api-pagamentos")
+    versao = os.getenv("DT_PROJECT_VERSION", "v1.0.0")
 
-headers = {
-    "X-Api-Key": "TOKEN"
-}
+    resultado = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "modo": "mock",
+        "dependency_track": {
+            "projectName": projeto,
+            "projectVersion": versao,
+            "bomSubmitted": True,
+            "policyViolations": 0,
+            "criticalVulnerabilities": 0,
+            "highVulnerabilities": 0
+        }
+    }
 
-with open("sbom.cdx.json", "rb") as f:
-    response = requests.post(
-        API_URL,
-        headers=headers,
-        files={"bom": f}
-    )
+    print(json.dumps(resultado, indent=2))
 
-print(response.status_code)
-print(response.text)
+if __name__ == "__main__":
+    main()

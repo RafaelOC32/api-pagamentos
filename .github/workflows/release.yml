@@ -1,27 +1,40 @@
 name: release
+
 on:
   push:
-    tags: ['v*']
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
   id-token: write
   packages: write
+  actions: read
 
 jobs:
   build-sign-attest:
+    name: Build, SBOM, scan, sign and attest
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build e push
+      - name: Build and push image
         id: build
         uses: docker/build-push-action@v6
         with:
@@ -29,50 +42,133 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
-      - uses: sigstore/cosign-installer@v3
-      - uses: anchore/sbom-action@v0
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@v0
         with:
           image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           format: cyclonedx-json
           output-file: sbom.cdx.json
 
-      - name: Scan
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Install OPA
+        run: |
+          curl -L -o opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64_static
+          chmod +x opa
+          sudo mv opa /usr/local/bin/opa
+
+      - name: Validate SBOM structure with OPA
+        run: |
+          opa eval \
+            --fail \
+            --format=pretty \
+            -i sbom.cdx.json \
+            -d policies/rego/sbom_required.rego \
+            "count(data.supply.sbom.deny) == 0"
+
+      - name: Validate license allowlist with OPA
+        run: |
+          opa eval \
+            --fail \
+            --format=pretty \
+            -i sbom.cdx.json \
+            -d policies/rego/license_policy.rego \
+            "count(data.supply.license.deny) == 0"
+
+      - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           format: cosign-vuln
           output: trivy.json
-          exit-code: 1
+          exit-code: 0
           severity: CRITICAL,HIGH
 
-      - name: Assinar imagem
+      - name: Evaluate vulnerability policy with OPA
+        run: |
+          opa eval \
+            --fail \
+            --format=pretty \
+            -i trivy.json \
+            -d policies/rego/vuln_policy.rego \
+            "count(data.supply.vuln.deny) == 0"
+
+      - name: Sign image with Cosign keyless
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           cosign sign --yes "ghcr.io/${{ github.repository }}@$DIGEST"
 
-      - name: Anexar SBOM
+      - name: Attach CycloneDX SBOM attestation
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           cosign attest --yes \
-            --predicate sbom.cdx.json --type cyclonedx \
+            --predicate sbom.cdx.json \
+            --type cyclonedx \
             "ghcr.io/${{ github.repository }}@$DIGEST"
 
-      - name: Anexar Vuln Scan
+      - name: Attach SPDX SBOM attestation
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           cosign attest --yes \
-            --predicate trivy.json --type vuln \
+            --predicate sbom.spdx.json \
+            --type spdx \
             "ghcr.io/${{ github.repository }}@$DIGEST"
+
+      - name: Attach vulnerability scan attestation
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign attest --yes \
+            --predicate trivy.json \
+            --type vuln \
+            "ghcr.io/${{ github.repository }}@$DIGEST"
+
+      - name: Submit SBOM to Dependency-Track or mock
+        run: |
+          chmod +x scripts/submit_dependency_track.sh
+          scripts/submit_dependency_track.sh sbom.cdx.json "${{ github.ref_name }}"
+
+      - name: Create or update GitHub release with evidence files
+        run: |
+          TAG="${{ github.ref_name }}"
+
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG ja existe"
+          else
+            gh release create "$TAG" \
+              --title "Release $TAG" \
+              --notes "Release automatizada com SBOM, scan, assinatura Cosign e atestacoes."
+          fi
+
+          gh release upload "$TAG" \
+            sbom.cdx.json \
+            sbom.spdx.json \
+            trivy.json \
+            --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   generate-provenance:
+    name: Generate SLSA provenance
     needs: build-sign-attest
+
     permissions:
       id-token: write
       contents: read
       packages: write
+      actions: read
+
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
       image: ghcr.io/${{ github.repository }}
