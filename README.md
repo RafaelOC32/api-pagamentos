@@ -312,6 +312,20 @@ O relatório consolida informações relacionadas a:
 
 ---
 
+## Mapeamento para Frameworks
+
+| Controle | NIST SSDF | SLSA | ISO 27001 |
+|-----------|-----------|-------|------------|
+| OPA / Rego | PW.4 | Build Controls | A.8.9 |
+| Geração de SBOM | PS.3 | Provenance Inputs | A.8.8 |
+| Verificação de Licenças | PW.8 | Policy Enforcement | A.8.9 |
+| Cosign Keyless | PW.6 | Artifact Signing | A.8.24 |
+| SLSA Provenance | PO.3 | Level 3 Provenance | A.5.37 |
+| Admission Gate | RV.1 | Deployment Controls | A.8.16 |
+| Auditoria | PO.5 | Evidence Collection | A.5.35 |
+
+---
+
 ## Publicação de Versões
 
 Criar uma nova versão:
