@@ -37,18 +37,19 @@ jobs:
 
       - name: Define lowercase image name
         id: image
+        shell: bash
         run: |
-         IMAGE_REPOSITORY="ghcr.io/${GITHUB_REPOSITORY,,}"
-         IMAGE_NAME="$IMAGE_REPOSITORY:${GITHUB_REF_NAME}"
+          IMAGE_REPOSITORY="ghcr.io/${GITHUB_REPOSITORY,,}"
+          IMAGE_NAME="$IMAGE_REPOSITORY:${GITHUB_REF_NAME}"
 
-         echo "IMAGE_REPOSITORY=$IMAGE_REPOSITORY" >> "$GITHUB_ENV"
-         echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
+          echo "IMAGE_REPOSITORY=$IMAGE_REPOSITORY" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
 
-         echo "image_repository=$IMAGE_REPOSITORY" >> "$GITHUB_OUTPUT"
-         echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "image_repository=$IMAGE_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
 
-         echo "IMAGE_REPOSITORY=$IMAGE_REPOSITORY"
-         echo "IMAGE_NAME=$IMAGE_NAME"
+          echo "IMAGE_REPOSITORY=$IMAGE_REPOSITORY"
+          echo "IMAGE_NAME=$IMAGE_NAME"
 
       - name: Build and push image
         id: build
@@ -76,12 +77,14 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: Install OPA
+        shell: bash
         run: |
           curl -L -o opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64_static
           chmod +x opa
           sudo mv opa /usr/local/bin/opa
 
       - name: Validate SBOM structure with OPA
+        shell: bash
         run: |
           opa eval \
             --fail \
@@ -91,6 +94,7 @@ jobs:
             "count(data.supply.sbom.deny) == 0"
 
       - name: Validate license allowlist with OPA
+        shell: bash
         run: |
           opa eval \
             --fail \
@@ -109,6 +113,7 @@ jobs:
           severity: CRITICAL,HIGH
 
       - name: Evaluate vulnerability policy with OPA
+        shell: bash
         run: |
           opa eval \
             --fail \
@@ -118,52 +123,60 @@ jobs:
             "count(data.supply.vuln.deny) == 0"
 
       - name: Sign image with Cosign keyless
+        shell: bash
         env:
-        DIGEST: ${{ steps.build.outputs.digest }}
-        IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
         run: |
           echo "Imagem para assinatura: $IMAGE_REPOSITORY@$DIGEST"
           cosign sign --yes "$IMAGE_REPOSITORY@$DIGEST"
 
       - name: Attach CycloneDX SBOM attestation
+        shell: bash
         env:
-        DIGEST: ${{ steps.build.outputs.digest }}
-        IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
         run: |
           echo "Imagem para attestation CycloneDX: $IMAGE_REPOSITORY@$DIGEST"
           cosign attest --yes \
-          --predicate sbom.cdx.json \
-          --type cyclonedx \
-          "$IMAGE_REPOSITORY@$DIGEST"
+            --predicate sbom.cdx.json \
+            --type cyclonedx \
+            "$IMAGE_REPOSITORY@$DIGEST"
 
       - name: Attach SPDX SBOM attestation
+        shell: bash
         env:
-        DIGEST: ${{ steps.build.outputs.digest }}
-        IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
         run: |
           echo "Imagem para attestation SPDX: $IMAGE_REPOSITORY@$DIGEST"
           cosign attest --yes \
-          --predicate sbom.spdx.json \
-          --type spdx \
-          "$IMAGE_REPOSITORY@$DIGEST"
+            --predicate sbom.spdx.json \
+            --type spdx \
+            "$IMAGE_REPOSITORY@$DIGEST"
 
       - name: Attach vulnerability scan attestation
+        shell: bash
         env:
-        DIGEST: ${{ steps.build.outputs.digest }}
-        IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_REPOSITORY: ${{ steps.image.outputs.image_repository }}
         run: |
           echo "Imagem para attestation Trivy: $IMAGE_REPOSITORY@$DIGEST"
           cosign attest --yes \
-          --predicate trivy.json \
-          --type vuln \
-          "$IMAGE_REPOSITORY@$DIGEST"
+            --predicate trivy.json \
+            --type vuln \
+            "$IMAGE_REPOSITORY@$DIGEST"
 
       - name: Submit SBOM to Dependency-Track or mock
+        shell: bash
         run: |
           chmod +x scripts/submit_dependency_track.sh
           scripts/submit_dependency_track.sh sbom.cdx.json "${{ github.ref_name }}"
 
       - name: Create or update GitHub release with evidence files
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
 
@@ -180,8 +193,6 @@ jobs:
             sbom.spdx.json \
             trivy.json \
             --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   generate-provenance:
     name: Generate SLSA provenance
