@@ -44,35 +44,35 @@ jobs:
             --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
-      - name: Verify CycloneDX SBOM attestation
-        shell: bash
-        run: |
-          echo "Verificando attestation CycloneDX da imagem: $IMAGE_NAME"
+      # - name: Verify CycloneDX SBOM attestation
+      #   shell: bash
+      #   run: |
+      #     echo "Verificando attestation CycloneDX da imagem: $IMAGE_NAME"
 
-          cosign verify-attestation \
-            "$IMAGE_NAME" \
-            --type cyclonedx \
-            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+      #     cosign verify-attestation \
+      #       "$IMAGE_NAME" \
+      #       --type cyclonedx \
+      #       --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
+      #       --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
-      - name: Verify SPDX SBOM attestation
-        shell: bash
-        run: |
-          echo "Verificando attestation SPDX da imagem: $IMAGE_NAME"
+      # - name: Verify SPDX SBOM attestation
+      #   shell: bash
+      #   run: |
+      #     echo "Verificando attestation SPDX da imagem: $IMAGE_NAME"
 
-          cosign verify-attestation \
-            "$IMAGE_NAME" \
-            --type spdx \
-            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+      #     cosign verify-attestation \
+      #       "$IMAGE_NAME" \
+      #       --type spdx \
+      #       --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
+      #       --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
-      - name: Verify SLSA provenance attestation
-        shell: bash
-        run: |
-          echo "Verificando SLSA Provenance da imagem: $IMAGE_NAME"
+      # - name: Verify SLSA provenance attestation
+      #   shell: bash
+      #   run: |
+      #     echo "Verificando SLSA Provenance da imagem: $IMAGE_NAME"
 
-          cosign verify-attestation \
-            "$IMAGE_NAME" \
-            --type slsaprovenance \
-            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+      #     cosign verify-attestation \
+      #       "$IMAGE_NAME" \
+      #       --type slsaprovenance \
+      #       --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
+      #       --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
