@@ -17,5 +17,5 @@ spec:
     spec:
       containers:
         - name: api-pagamentos
-          image: ghcr.io/RafaelOC32/api-pagamentos:v1.0.0
+          image: ghcr.io/rafaeloc32/api-pagamentos:v1.0.0
           imagePullPolicy: Always

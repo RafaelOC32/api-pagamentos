@@ -12,7 +12,7 @@ test_allow_valid_slsa_provenance if {
     },
     "subject": [
       {
-        "name": "ghcr.io/RafaelOC32/api-pagamentos",
+        "name": "ghcr.io/rafaeloc32/api-pagamentos",
         "digest": {
           "sha256": "abc123"
         }

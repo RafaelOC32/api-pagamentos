@@ -4,14 +4,14 @@ metadata:
   name: api-pagamentos-policy
 spec:
   images:
-    - glob: "ghcr.io/RafaelOC32/api-pagamentos**"
+    - glob: "ghcr.io/rafaeloc32/api-pagamentos**"
 
   authorities:
     - keyless:
         url: https://fulcio.sigstore.dev
         identities:
           - issuer: https://token.actions.githubusercontent.com
-            subjectRegExp: "^https://github.com/RafaelOC32/api-pagamentos/.*"
+            subjectRegExp: "^https://github.com/rafaeloc32/api-pagamentos/.*"
 
       ctlog:
         url: https://rekor.sigstore.dev
