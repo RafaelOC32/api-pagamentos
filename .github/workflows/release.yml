@@ -120,7 +120,7 @@ jobs:
           cosign attest --yes \
             --predicate sbom.cdx.json \
             --type cyclonedx \
-            "ghcr.io/${{ github.repository }}@$DIGEST"
+            "${{ env.IMAGE_REPOSITORY }}@$DIGEST"
 
       - name: Attach SPDX SBOM attestation
         env:
@@ -129,7 +129,7 @@ jobs:
           cosign attest --yes \
             --predicate sbom.spdx.json \
             --type spdx \
-            "ghcr.io/${{ github.repository }}@$DIGEST"
+            "${{ env.IMAGE_REPOSITORY }}@$DIGEST"
 
       - name: Attach vulnerability scan attestation
         env:
@@ -138,7 +138,7 @@ jobs:
           cosign attest --yes \
             --predicate trivy.json \
             --type vuln \
-            "ghcr.io/${{ github.repository }}@$DIGEST"
+            "${{ env.IMAGE_REPOSITORY }}@$DIGEST"
 
       - name: Submit SBOM to Dependency-Track or mock
         run: |
