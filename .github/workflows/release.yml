@@ -84,7 +84,7 @@ jobs:
             "count(data.supply.license.deny) == 0"
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           format: cosign-vuln
