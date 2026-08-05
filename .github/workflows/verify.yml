@@ -1,23 +1,53 @@
 name: verify
 
 on:
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag da imagem para verificar, exemplo v1.0.0"
+        required: true
 
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 jobs:
   verify:
+    name: Verify signature and attestations
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
 
-      - uses: sigstore/cosign-installer@v3
-
-      - name: Verify Signature
+      - name: Verify image signature
         run: |
           cosign verify \
-          ghcr.io/${{ github.repository }}:latest \
-          --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+            "ghcr.io/${{ github.repository }}:${{ inputs.tag }}" \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+      - name: Verify CycloneDX SBOM attestation
+        run: |
+          cosign verify-attestation \
+            "ghcr.io/${{ github.repository }}:${{ inputs.tag }}" \
+            --type cyclonedx \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+      - name: Verify SPDX SBOM attestation
+        run: |
+          cosign verify-attestation \
+            "ghcr.io/${{ github.repository }}:${{ inputs.tag }}" \
+            --type spdx \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+      - name: Verify SLSA provenance attestation
+        run: |
+          cosign verify-attestation \
+            "ghcr.io/${{ github.repository }}:${{ inputs.tag }}" \
+            --type slsaprovenance \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"

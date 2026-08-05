@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-pagamentos
+  namespace: producao
+  labels:
+    app: api-pagamentos
 spec:
   replicas: 1
   selector:
@@ -13,7 +16,6 @@ spec:
         app: api-pagamentos
     spec:
       containers:
-      - name: api-pagamentos
-        image: ghcr.io/RafaelOC32/api-pagamentos:latest
-        ports:
-        - containerPort: 3000
+        - name: api-pagamentos
+          image: ghcr.io/RafaelOC32/api-pagamentos:v1.0.0
+          imagePullPolicy: Always

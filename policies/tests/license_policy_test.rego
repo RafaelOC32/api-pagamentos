@@ -1,31 +1,37 @@
 package supply.license
 
-test_license_blocked {
-    result := deny with input as {
-        "components": [{
-            "name": "bad-lib",
-            "licenses": [{
-                "license": {
-                    "id": "GPL-3.0-only"
-                }
-            }]
-        }]
-    }
+import rego.v1
 
-    count(result) == 1
+test_allow_mit_license if {
+  count(deny) == 0 with input as {
+    "components": [
+      {
+        "name": "api-pagamentos",
+        "licenses": [
+          {
+            "license": {
+              "id": "MIT"
+            }
+          }
+        ]
+      }
+    ]
+  }
 }
 
-test_license_allowed {
-    result := deny with input as {
-        "components": [{
-            "name": "good-lib",
-            "licenses": [{
-                "license": {
-                    "id": "MIT"
-                }
-            }]
-        }]
-    }
-
-    count(result) == 0
+test_deny_gpl_license if {
+  deny["componente lib-exemplo viola licenca proibida GPL-3.0-only"] with input as {
+    "components": [
+      {
+        "name": "lib-exemplo",
+        "licenses": [
+          {
+            "license": {
+              "id": "GPL-3.0-only"
+            }
+          }
+        ]
+      }
+    ]
+  }
 }

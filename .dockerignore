@@ -1,0 +1,9 @@
+.git
+.github
+policies
+k8s
+scripts
+relatorios
+README.md
+node_modules
+npm-debug.log

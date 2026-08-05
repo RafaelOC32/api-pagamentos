@@ -1,15 +1,43 @@
 package supply.sbom
 
-test_missing_sbom {
-    result := deny with input as {}
+import rego.v1
 
-    count(result) == 1
+test_allow_valid_cyclonedx_sbom if {
+  count(deny) == 0 with input as {
+    "bomFormat": "CycloneDX",
+    "components": [
+      {
+        "name": "node",
+        "version": "20"
+      }
+    ]
+  }
 }
 
-test_sbom_present {
-    result := deny with input as {
-        "sbom": true
-    }
+test_deny_missing_bom_format if {
+  deny["SBOM sem campo bomFormat"] with input as {
+    "components": [
+      {
+        "name": "node"
+      }
+    ]
+  }
+}
 
-    count(result) == 0
+test_deny_invalid_bom_format if {
+  deny["SBOM em formato invalido: SPDX"] with input as {
+    "bomFormat": "SPDX",
+    "components": [
+      {
+        "name": "node"
+      }
+    ]
+  }
+}
+
+test_deny_empty_components if {
+  deny["SBOM sem componentes"] with input as {
+    "bomFormat": "CycloneDX",
+    "components": []
+  }
 }

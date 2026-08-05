@@ -1,6 +1,20 @@
 package supply.image
 
-deny[msg] {
-    input.image.tag == "latest"
-    msg := "uso da tag latest nao permitido"
+import rego.v1
+
+deny contains msg if {
+  not input.image
+  msg := "imagem nao informada"
+}
+
+deny contains msg if {
+  image := input.image
+  not startswith(image, "ghcr.io/")
+  msg := sprintf("imagem fora do registry permitido: %v", [image])
+}
+
+deny contains msg if {
+  image := input.image
+  contains(image, ":latest")
+  msg := "tag latest nao permitida"
 }

@@ -1,0 +1,11 @@
+{
+  "name": "api-pagamentos",
+  "version": "1.0.0",
+  "description": "Aplicacao ficticia minima para projeto final integrador DevSecOps",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node app.js"
+  },
+  "license": "MIT"
+}
